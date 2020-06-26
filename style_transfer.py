@@ -10,14 +10,16 @@ def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def img_loader(img, device, resize=False):
+def img_loader(img, device):
     """
     This function loads and pre-porcesses images for
     style transfer needs.
     """
     PIL_img = Image.open(img)
-    if resize:
-        scale_ratio = 64 / max(PIL_img.size)
+    max_dim = max(PIL_img.size)
+    max_allow_dim = 256
+    if max_dim > max_allow_dim:
+        scale_ratio = max_allow_dim / max_dim
         loader = transforms.Compose([transforms.Resize(
             (int(PIL_img.size[1] * scale_ratio),
              int(PIL_img.size[0] * scale_ratio))),
@@ -242,9 +244,11 @@ class NST_Assy():
                 loss.backward()
 
                 run[0] += 1
-                if run[0] % 50 == 0:
-                    print('Run {} : Style Loss = {:4f} Content Loss = {:4f}'.format(
-                        run[0], style_score.item(), content_score.item()))
+                # uncomment if you'd like to see progress output
+                # in the python terminal
+                # if run[0] % 50 == 0:
+                #     print('Run {} : Style Loss = {:4f} Content Loss = {:4f}'.format(
+                #         run[0], style_score.item(), content_score.item()))
 
                 return style_score + content_score
 
@@ -256,15 +260,15 @@ class NST_Assy():
         return self.input_img
 
 
-async def image_style_transfer(gamma, resize, user_id):
+async def image_style_transfer(gamma, user_id):
     # set device for model run:
     device = get_device()
 
     # load content and style images
     content_img_name = user_id + '_content_img.jpg'
     style_img_name = user_id + '_style_img.jpg'
-    content_img = img_loader(content_img_name, device, resize)
-    style_img = img_loader(style_img_name, device, resize)
+    content_img = img_loader(content_img_name, device)
+    style_img = img_loader(style_img_name, device)
 
     # initialize input image:
     input_img = content_img.clone()
